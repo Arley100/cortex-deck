@@ -20,8 +20,13 @@ export function DrillHost({ definition, variant, onComplete, onExit }: DrillHost
   onExitRef.current = onExit;
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const host = containerRef.current;
+    if (!host) return;
+    // each run gets its own container element so a remount (StrictMode, key
+    // change) never hands the same node to createRoot twice
+    const container = document.createElement("div");
+    container.className = "flex flex-1 flex-col";
+    host.appendChild(container);
     let cleanup: (() => void) | null = null;
     definition.run({
       container,
@@ -32,7 +37,10 @@ export function DrillHost({ definition, variant, onComplete, onExit }: DrillHost
         cleanup = fn;
       },
     });
-    return () => cleanup?.();
+    return () => {
+      cleanup?.();
+      container.remove();
+    };
   }, [definition, variant]);
 
   return <div ref={containerRef} className="flex flex-1 flex-col" />;

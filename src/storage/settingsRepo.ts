@@ -1,12 +1,20 @@
 import { db, type CortexDeckDB } from "./db";
 
+export interface PrePostSession {
+  /** shared tag on both halves of the session */
+  tag: string;
+}
+
 export interface AppSettings {
   /** drills chosen for the pre/post battery */
   batteryDrills: string[];
+  /** a pre battery is done and the post battery is still pending */
+  activePrePost: PrePostSession | null;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   batteryDrills: ["stroop", "reaction", "gonogo"],
+  activePrePost: null,
 };
 
 export function createSettingsRepo(database: CortexDeckDB = db) {
