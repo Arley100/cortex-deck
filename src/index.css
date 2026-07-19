@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* Theme tokens ported from prototype/cognitive-console.jsx palette */
+@theme {
+  --color-bg: #0b0f17;
+  --color-panel: #141b27;
+  --color-panel-hi: #1b2432;
+  --color-edge: #26303f;
+  --color-fg: #e4eaf2;
+  --color-muted: #8091a6;
+  --color-cyan: #2fd4e8;
+  --color-violet: #9d7bff;
+  --color-amber: #f5b94a;
+  --color-rose: #ff6b7a;
+  --color-green: #57e39a;
+  --color-blue: #5aa9ff;
+
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+  }
+}
