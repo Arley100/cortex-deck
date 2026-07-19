@@ -21,4 +21,11 @@ export default tseslint.config(
       "react-refresh/only-export-components": "warn",
     },
   },
+  {
+    // drill folders export DrillDefinition factories next to their components
+    files: ["src/drills/**"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

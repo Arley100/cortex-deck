@@ -36,13 +36,22 @@ export interface DrillScore {
   dPrime?: number;
 }
 
+export interface RunMeta {
+  /** variant actually run, chosen on the drill's intro screen */
+  variant?: string;
+}
+
 export interface DrillContext {
   /** where the drill mounts its UI */
   container: HTMLElement;
-  /** variant chosen on the intro screen, if the drill has variants */
+  /** variant preselected by the caller, if any */
   variant?: string;
-  /** report the finished run */
-  complete: (events: TrialEvent[]) => void;
+  /** report a finished run; may fire more than once if the user replays */
+  complete: (events: TrialEvent[], meta?: RunMeta) => void;
+  /** user tapped exit; host tears the drill down */
+  exit?: () => void;
+  /** host registers teardown work to run when the drill is removed */
+  registerCleanup?: (fn: () => void) => void;
 }
 
 export interface DrillDefinition {
