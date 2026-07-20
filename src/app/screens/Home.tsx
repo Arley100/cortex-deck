@@ -75,6 +75,13 @@ export function Home() {
         >
           PRE / POST
         </button>
+        <button
+          type="button"
+          onClick={() => navigate({ name: "settings" })}
+          className="flex-1 rounded-2xl border border-dashed border-edge p-3 font-mono text-xs tracking-widest text-muted transition active:scale-[0.98]"
+        >
+          SETTINGS
+        </button>
       </div>
       <p className="mt-auto pt-6 text-center text-xs leading-relaxed text-muted">
         These drills train the practiced task; transfer to anything else is limited. You

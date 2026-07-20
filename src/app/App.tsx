@@ -2,6 +2,7 @@ import { Home } from "./screens/Home";
 import { DrillScreen } from "./screens/DrillScreen";
 import { Faculties } from "./screens/Faculties";
 import { PrePost } from "./screens/PrePost";
+import { Settings } from "./screens/Settings";
 import { useAppStore } from "./store";
 
 export function App() {
@@ -14,6 +15,7 @@ export function App() {
         {screen.name === "drill" && <DrillScreen key={screen.id} id={screen.id} />}
         {screen.name === "faculties" && <Faculties />}
         {screen.name === "prepost" && <PrePost />}
+        {screen.name === "settings" && <Settings />}
       </div>
     </div>
   );
