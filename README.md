@@ -55,10 +55,12 @@ d′ uses the standard 1/(2N) correction when a hit or false-alarm rate is 0 or 
 ## Meet Pip
 
 <p align="center">
-  <img src="docs/screenshots/pip.gif" alt="Animated: Pip clapping and hopping for a personal best, and pumping both fists for a below-baseline run" width="560" />
+  <img src="docs/screenshots/pip.gif" alt="Animated: Pip, a doll-like character in headphones, haori and hakama, clapping and hopping for a personal best, and raising both fists for a below-baseline run" width="560" />
 </p>
 
-Pip is a small original robot who reacts to every finished run. His eyes follow your pointer. His reaction comes from one pure function, `classifyRun` in [`src/baseline/verdict.ts`](src/baseline/verdict.ts), which compares the run with the baseline computed from your **previous** runs. A run never counts toward the baseline it is judged against.
+Pip is an original character who reacts to every finished run. He is half Japanese ichimatsu doll (shaved, monk-like scalp, porcelain face, haori jacket over striped hakama, tabi feet) and half plush desk companion (round soft head, dot eyes, blush, and headphones that nod to the app's ambient drone). The tie on his chest glows in the color of his mood, and his eyes follow your pointer. He is pure SVG and CSS: no image files, crisp at any size.
+
+His reaction comes from one pure function, `classifyRun` in [`src/baseline/verdict.ts`](src/baseline/verdict.ts), which compares the run with the baseline computed from your **previous** runs. A run never counts toward the baseline it is judged against.
 
 | Your run | Pip | What he says |
 | --- | --- | --- |
@@ -109,7 +111,7 @@ Measurement rule: **a sound never announces a stimulus.** There is no tone when 
 
 ## Design
 
-The visual language combines a handful of interaction patterns explored on [21st.dev](https://21st.dev), rebuilt from scratch for this app:
+The visual language combines interaction patterns explored on [21st.dev](https://21st.dev) with two character references for the mascot, all rebuilt from scratch for this app:
 
 | Element | Where it shows up |
 | --- | --- |
@@ -118,6 +120,7 @@ The visual language combines a handful of interaction patterns explored on [21st
 | Chromatic RGB-split text with brief slice glitches | wordmark, screen titles, results headline |
 | HUD buttons with clipped corners and viewfinder brackets | every button, card and panel |
 | Eyes that track the cursor | Pip |
+| Ichimatsu doll styling crossed with a plush, headphone-wearing desk companion | Pip |
 
 Two rules keep the decoration out of the measurement:
 
