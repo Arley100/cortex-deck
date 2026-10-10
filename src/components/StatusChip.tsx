@@ -24,9 +24,32 @@ export function StatusChip({ status }: { status: BaselineStatus }) {
   }
   return (
     <span
-      className="rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-wide"
-      style={{ color, borderColor: color }}
+      className="inline-flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] tracking-wide whitespace-nowrap"
+      style={{
+        color,
+        borderColor: `color-mix(in srgb, ${color} 45%, transparent)`,
+        background: `color-mix(in srgb, ${color} 8%, transparent)`,
+      }}
     >
+      {status.kind === "calibrating" ? (
+        <span aria-hidden="true" className="flex gap-[2px]">
+          {Array.from({ length: status.needed }, (_, i) => (
+            <span
+              key={i}
+              className="h-[7px] w-[3px]"
+              style={{
+                background: i < status.runs ? "var(--color-cyan)" : "var(--color-edge)",
+              }}
+            />
+          ))}
+        </span>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: color, boxShadow: `0 0 6px ${color}` }}
+        />
+      )}
       {text}
     </span>
   );

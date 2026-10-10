@@ -3,6 +3,9 @@ import { GameShell } from "../../components/GameShell";
 import { Results } from "../../components/Results";
 import { StatLine } from "../../components/StatLine";
 import { Btn } from "../../components/Btn";
+import { DrillIntro } from "../../components/DrillIntro";
+import { TimeBar } from "../../components/TrialMeter";
+import { sound } from "../../audio/engine";
 import { useFlash } from "../../components/useFlash";
 import { createRng, randInt, randIntIn, shuffle, type Rng } from "../../engine/rng";
 import { runCountdown } from "../../engine/scheduler";
@@ -116,6 +119,7 @@ export function MathSprintDrill({ config, onComplete, onExit }: Props) {
       streakRef.current = 0;
     }
     setStreak(streakRef.current);
+    sound.play(correct ? "good" : "bad");
     triggerFlash(correct ? "ok" : "no");
     next();
   };
@@ -125,45 +129,66 @@ export function MathSprintDrill({ config, onComplete, onExit }: Props) {
   return (
     <GameShell title="MATH SPRINT" sub="processing speed" accent="amber" onExit={onExit}>
       {phase === "intro" && (
-        <div className="flex flex-col items-center gap-5 text-center">
-          <p className="text-sm leading-relaxed text-muted">
-            As many as you can in {config.seconds} seconds. Four choices, one right. Chain
-            correct answers for a streak.
-          </p>
-          <Btn onClick={start} big accent="amber">
-            START
-          </Btn>
-        </div>
+        <DrillIntro
+          accent="amber"
+          glyph="✦"
+          specs={[`${config.seconds} seconds`, "+ − ×", `${config.choices} choices`]}
+          actions={
+            <Btn onClick={start} big solid accent="amber">
+              START
+            </Btn>
+          }
+        >
+          As many as you can in {config.seconds} seconds. Four choices, one right. Chain
+          correct answers for a streak.
+        </DrillIntro>
       )}
       {phase === "run" && question && (
         <div className="flex w-full flex-col items-center gap-6">
-          <div className="flex w-full items-center justify-between font-mono">
-            <span
-              className="text-xs tracking-widest"
-              style={{ color: streak > 1 ? "var(--color-amber)" : "var(--color-muted)" }}
-            >
-              {streak > 1 ? `🔥 ${streak} streak` : `${correctCount} solved`}
+          <TimeBar left={timeLeft} total={config.seconds} color="var(--color-amber)" />
+          <div className="flex w-full items-center justify-between font-mono text-[10px] tracking-[0.25em] text-muted">
+            <span>
+              <span className="tabular-nums text-fg">{correctCount}</span> SOLVED
             </span>
             <span
-              className="text-sm font-bold"
-              style={{ color: timeLeft <= 10 ? "var(--color-rose)" : "var(--color-fg)" }}
+              className="flex items-center gap-1.5"
+              style={{ color: streak > 1 ? "var(--color-amber)" : undefined }}
             >
-              {timeLeft}s
+              STREAK
+              <span aria-hidden="true" className="flex gap-[2px]">
+                {Array.from({ length: 8 }, (_, k) => (
+                  <span
+                    key={k}
+                    className="h-2.5 w-1 transition-colors duration-200"
+                    style={{
+                      background: k < streak ? "var(--color-amber)" : "var(--color-edge)",
+                      boxShadow: k < streak ? "0 0 6px var(--color-amber)" : "none",
+                    }}
+                  />
+                ))}
+              </span>
+              <span className="tabular-nums">{streak}</span>
             </span>
           </div>
           <div
-            className="flex h-28 w-full items-center justify-center rounded-2xl border bg-panel-hi transition-colors duration-100"
+            className="glass hud-corners scanlines flex h-32 w-full items-center justify-center rounded-2xl transition-colors duration-100"
             style={{
+              ["--c" as string]:
+                flash === "ok"
+                  ? "var(--color-green)"
+                  : flash === "no"
+                    ? "var(--color-rose)"
+                    : "var(--color-amber)",
               borderColor:
                 flash === "ok"
                   ? "var(--color-green)"
                   : flash === "no"
                     ? "var(--color-rose)"
-                    : "var(--color-edge)",
+                    : undefined,
             }}
           >
-            <span className="font-mono text-4xl font-extrabold">
-              {question.a} {question.op} {question.b}
+            <span className="font-mono text-5xl font-bold tabular-nums">
+              {question.a} <span className="text-amber">{question.op}</span> {question.b}
             </span>
           </div>
           <div className="grid w-full grid-cols-2 gap-3">
@@ -172,8 +197,11 @@ export function MathSprintDrill({ config, onComplete, onExit }: Props) {
                 key={`${trialNoRef.current}-${i}`}
                 type="button"
                 onClick={() => answer(c)}
-                className="rounded-xl border border-edge bg-panel-hi py-5 font-mono text-2xl font-bold transition active:scale-95"
+                className="hud-btn hud-btn-lg w-full text-2xl tracking-normal"
+                style={{ ["--c" as string]: "var(--color-amber)", color: "var(--color-fg)" }}
               >
+                <span aria-hidden="true" className="hud-btn-edge" />
+                <span aria-hidden="true" className="hud-btn-fill" />
                 {c}
               </button>
             ))}

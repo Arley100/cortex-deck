@@ -5,16 +5,25 @@ export interface PrePostSession {
   tag: string;
 }
 
+export interface SoundPrefs {
+  /** short acknowledgements of input and results */
+  sfx: boolean;
+  /** optional ambient drone */
+  ambient: boolean;
+}
+
 export interface AppSettings {
   /** drills chosen for the pre/post battery */
   batteryDrills: string[];
   /** a pre battery is done and the post battery is still pending */
   activePrePost: PrePostSession | null;
+  sound: SoundPrefs;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   batteryDrills: ["stroop", "reaction", "gonogo"],
   activePrePost: null,
+  sound: { sfx: true, ambient: false },
 };
 
 export function createSettingsRepo(database: CortexDeckDB = db) {

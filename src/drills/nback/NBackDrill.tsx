@@ -3,6 +3,9 @@ import { GameShell } from "../../components/GameShell";
 import { Results } from "../../components/Results";
 import { StatLine } from "../../components/StatLine";
 import { Btn } from "../../components/Btn";
+import { DrillIntro } from "../../components/DrillIntro";
+import { TrialMeter } from "../../components/TrialMeter";
+import { sound } from "../../audio/engine";
 import { createRng, randInt } from "../../engine/rng";
 import { runTrialLoop } from "../../engine/scheduler";
 import { useRunHandle } from "../../engine/useRunHandle";
@@ -94,9 +97,11 @@ export function NBackDrill({ config, onComplete, onExit }: Props) {
     const rt = performance.now() - shownAtRef.current;
     if (isMatch(i, n)) {
       eventsRef.current.push({ trial: i, kind: "target", response: "hit", rt });
+      sound.play("good");
       setFlash("hit");
     } else {
       eventsRef.current.push({ trial: i, kind: "nontarget", response: "falseAlarm", rt });
+      sound.play("bad");
       setFlash("fa");
     }
   };
@@ -112,50 +117,57 @@ export function NBackDrill({ config, onComplete, onExit }: Props) {
   return (
     <GameShell title="N-BACK" sub={`working memory · ${n}-back`} accent="cyan" onExit={onExit}>
       {phase === "intro" && (
-        <div className="flex flex-col items-center gap-5 text-center">
-          <p className="text-sm leading-relaxed text-muted">
-            A cell lights up every couple of seconds. Tap{" "}
-            <b className="text-cyan">MATCH</b> when the lit cell equals the one from{" "}
-            <b className="text-cyan">N steps back</b>. 3-back is a real step up.
-          </p>
-          <div className="flex gap-3">
-            <Btn onClick={() => start(2)} big accent="cyan">
-              2-BACK
-            </Btn>
-            <Btn onClick={() => start(3)} big accent="violet">
-              3-BACK
-            </Btn>
-          </div>
-        </div>
+        <DrillIntro
+          accent="cyan"
+          glyph="◉"
+          specs={[`${config.trials} trials`, `${(config.isiMs / 1000).toFixed(1)} s pace`, "3 × 3 grid"]}
+          actions={
+            <>
+              <Btn onClick={() => start(2)} big solid accent="cyan">
+                2-BACK
+              </Btn>
+              <Btn onClick={() => start(3)} big accent="violet">
+                3-BACK
+              </Btn>
+            </>
+          }
+        >
+          A cell lights up every couple of seconds. Tap <b className="text-cyan">MATCH</b>{" "}
+          when the lit cell equals the one from <b className="text-cyan">N steps back</b>.
+          3-back is a real step up.
+        </DrillIntro>
       )}
       {phase === "run" && (
-        <div className="flex flex-col items-center gap-6">
-          <div className="font-mono text-xs tracking-widest text-muted">
-            {trialNo + 1} / {config.trials}
-          </div>
-          <div className="grid grid-cols-3 gap-3">
+        <div className="flex w-full flex-col items-center gap-6">
+          <TrialMeter current={trialNo} total={config.trials} color="var(--color-cyan)" />
+          <div className="glass hud-corners grid grid-cols-3 gap-2.5 rounded-2xl p-3" style={{ ["--c" as string]: glow }}>
             {Array.from({ length: 9 }).map((_, i) => {
               const on = activeCell === i;
               return (
                 <div
                   key={i}
                   data-testid={`cell-${i}`}
-                  className="h-[74px] w-[74px] rounded-xl border transition-all duration-150"
+                  className="relative h-[78px] w-[78px] rounded-lg border transition-all duration-150 sm:h-[86px] sm:w-[86px]"
                   style={{
-                    background: on ? glow : "var(--color-panel-hi)",
+                    background: on
+                      ? `radial-gradient(circle at 50% 40%, color-mix(in srgb, ${glow} 70%, white), ${glow})`
+                      : "linear-gradient(180deg, var(--color-panel-hi), var(--color-panel))",
                     borderColor: on ? glow : "var(--color-edge)",
-                    boxShadow: on ? `0 0 22px ${glow}` : "none",
+                    boxShadow: on
+                      ? `0 0 28px ${glow}, 0 0 60px -10px ${glow}, inset 0 1px 0 rgb(255 255 255 / 0.5)`
+                      : "inset 0 1px 0 rgb(255 255 255 / 0.04)",
+                    transform: on ? "scale(1.04)" : "none",
                   }}
                 />
               );
             })}
           </div>
-          <div className="h-5 font-mono text-sm font-semibold">
-            {flash === "miss" && <span className="text-rose">missed a match</span>}
-            {flash === "hit" && <span className="text-green">match</span>}
-            {flash === "fa" && <span className="text-rose">not a match</span>}
+          <div className="h-5 font-mono text-xs font-semibold tracking-[0.2em]" aria-live="polite">
+            {flash === "miss" && <span className="text-rose">MISSED A MATCH</span>}
+            {flash === "hit" && <span className="text-green">MATCH</span>}
+            {flash === "fa" && <span className="text-rose">NOT A MATCH</span>}
           </div>
-          <Btn onClick={callMatch} big accent="cyan" style={{ minWidth: 200 }}>
+          <Btn onClick={callMatch} big solid accent="cyan" sfx={null} style={{ minWidth: 220 }}>
             MATCH
           </Btn>
         </div>

@@ -8,10 +8,15 @@ interface StatLineProps {
 
 export function StatLine({ label, value, accent }: StatLineProps) {
   return (
-    <div className="flex items-baseline justify-between py-1">
-      <span className="font-mono text-xs tracking-wider text-muted">{label}</span>
+    <div className="flex items-baseline gap-2 py-1.5">
+      <span className="font-mono text-[11px] tracking-wider text-muted">{label}</span>
       <span
-        className="font-mono text-base font-bold"
+        aria-hidden="true"
+        className="mb-[3px] flex-1 border-b border-dotted"
+        style={{ borderColor: "color-mix(in srgb, var(--color-muted) 30%, transparent)" }}
+      />
+      <span
+        className="font-mono text-base font-bold tabular-nums"
         style={{ color: accent ? accentVar[accent] : "var(--color-fg)" }}
       >
         {value}

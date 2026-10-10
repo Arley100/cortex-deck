@@ -19,6 +19,7 @@ export interface DrillStatusRow {
   /** last 10 headline scores, oldest first, for the sparkline */
   last10: number[];
   unit: ScoreUnit | null;
+  higherIsBetter: boolean;
 }
 
 /**
@@ -61,6 +62,7 @@ export function useDrillStatuses(): DrillStatusRow[] | null {
           todayValue: today ? today.score : null,
           last10: values.slice(-10),
           unit: runs.length > 0 ? (runs[0] as (typeof runs)[number]).unit : null,
+          higherIsBetter,
         });
       }
       if (alive) setRows(out);

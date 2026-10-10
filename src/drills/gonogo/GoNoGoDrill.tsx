@@ -3,6 +3,9 @@ import { GameShell } from "../../components/GameShell";
 import { Results } from "../../components/Results";
 import { StatLine } from "../../components/StatLine";
 import { Btn } from "../../components/Btn";
+import { DrillIntro } from "../../components/DrillIntro";
+import { TrialMeter } from "../../components/TrialMeter";
+import { sound } from "../../audio/engine";
 import { useFlash } from "../../components/useFlash";
 import { createRng, type Rng } from "../../engine/rng";
 import { runTrialLoop } from "../../engine/scheduler";
@@ -100,74 +103,82 @@ export function GoNoGoDrill({ config, onComplete, onExit }: Props) {
         rt: performance.now() - stimAtRef.current,
       });
       setCounts((c) => ({ ...c, hits: c.hits + 1 }));
+      sound.play("good");
       triggerFlash("ok");
     } else {
       eventsRef.current.push({ trial: i, kind: "nontarget", response: "falseAlarm" });
       setCounts((c) => ({ ...c, commissions: c.commissions + 1 }));
+      sound.play("bad");
       triggerFlash("no");
     }
   };
 
   const score = phase === "done" ? scoreGoNoGo(events) : null;
 
+  const edge =
+    flash === "no" ? "var(--color-rose)" : flash === "ok" ? "var(--color-green)" : undefined;
+
   return (
     <GameShell title="GO / NO-GO" sub="response inhibition" accent="blue" onExit={onExit}>
       {phase === "intro" && (
-        <div className="flex flex-col items-center gap-5 text-center">
-          <p className="text-sm leading-relaxed text-muted">
-            Tap fast on a <b className="text-green">green circle</b>. Do{" "}
-            <b className="text-rose">nothing</b> on a <b className="text-rose">red square</b>.
-            It's easy to go; the skill is stopping.
-          </p>
-          <Btn onClick={start} big accent="blue">
-            START
-          </Btn>
-        </div>
+        <DrillIntro
+          accent="blue"
+          glyph="⊘"
+          specs={[`${config.trials} trials`, `${config.windowMs} ms window`, `${Math.round(config.goRate * 100)}% go`]}
+          actions={
+            <Btn onClick={start} big solid accent="blue">
+              START
+            </Btn>
+          }
+        >
+          Tap fast on a <b className="text-green">green circle</b>. Do{" "}
+          <b className="text-rose">nothing</b> on a <b className="text-rose">red square</b>.
+          It's easy to go; the skill is stopping.
+        </DrillIntro>
       )}
       {phase === "run" && (
         <div className="flex w-full flex-col items-center gap-5">
-          <div className="font-mono text-xs tracking-widest text-muted">
-            {trialNo + 1} / {config.trials}
-          </div>
+          <TrialMeter current={trialNo} total={config.trials} color="var(--color-blue)" />
           <button
             type="button"
             onClick={tap}
-            className="flex h-64 w-full items-center justify-center rounded-2xl border bg-panel-hi transition-colors duration-100"
-            style={{
-              borderColor:
-                flash === "no"
-                  ? "var(--color-rose)"
-                  : flash === "ok"
-                    ? "var(--color-green)"
-                    : "var(--color-edge)",
-            }}
+            aria-label="tap on green"
+            className="glass hud-corners flex h-72 w-full items-center justify-center rounded-2xl transition-colors duration-100"
+            style={{ ["--c" as string]: edge ?? "var(--color-blue)", borderColor: edge }}
           >
             {stim ? (
               stim === "go" ? (
                 <span
                   data-testid="stim-go"
-                  className="h-[120px] w-[120px] rounded-full"
+                  className="h-[128px] w-[128px] rounded-full"
                   style={{
-                    background: "var(--color-green)",
-                    boxShadow: "0 0 30px var(--color-green)",
+                    background:
+                      "radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--color-green) 60%, white), var(--color-green) 65%)",
+                    boxShadow: "0 0 40px var(--color-green), 0 0 90px -10px var(--color-green)",
                   }}
                 />
               ) : (
                 <span
                   data-testid="stim-nogo"
-                  className="h-[120px] w-[120px] rounded-[14px]"
+                  className="h-[124px] w-[124px] rounded-[14px]"
                   style={{
-                    background: "var(--color-rose)",
-                    boxShadow: "0 0 30px var(--color-rose)",
+                    background:
+                      "linear-gradient(160deg, color-mix(in srgb, var(--color-rose) 70%, white), var(--color-rose) 60%)",
+                    boxShadow: "0 0 40px var(--color-rose), 0 0 90px -10px var(--color-rose)",
                   }}
                 />
               )
             ) : (
-              <span className="font-mono text-muted">·</span>
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-muted" />
             )}
           </button>
-          <div className="font-mono text-sm text-muted">
-            hits {counts.hits} · slips {counts.commissions}
+          <div className="flex gap-4 font-mono text-[10px] tracking-[0.25em] text-muted">
+            <span>
+              HITS <span className="tabular-nums text-green">{counts.hits}</span>
+            </span>
+            <span>
+              SLIPS <span className="tabular-nums text-rose">{counts.commissions}</span>
+            </span>
           </div>
         </div>
       )}

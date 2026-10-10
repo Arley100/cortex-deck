@@ -3,6 +3,9 @@ import { GameShell } from "../../components/GameShell";
 import { Results } from "../../components/Results";
 import { StatLine } from "../../components/StatLine";
 import { Btn } from "../../components/Btn";
+import { DrillIntro } from "../../components/DrillIntro";
+import { TrialMeter } from "../../components/TrialMeter";
+import { sound } from "../../audio/engine";
 import { createRng, randIntIn, type Rng } from "../../engine/rng";
 import { createTimeline, type Timeline } from "../../engine/timeline";
 import { useRunHandle } from "../../engine/useRunHandle";
@@ -65,6 +68,7 @@ export function ReactionDrill({ config, onComplete, onExit }: Props) {
         response: "falseAlarm",
         detail: { early: true },
       });
+      sound.play("bad");
       setPhaseBoth("early");
       return;
     }
@@ -81,6 +85,7 @@ export function ReactionDrill({ config, onComplete, onExit }: Props) {
         rt,
       });
       trialRef.current++;
+      sound.play("tap");
       setTimes((t) => [...t, rt]);
       if (trialRef.current >= config.trials) {
         setPhaseBoth("done");
@@ -92,52 +97,75 @@ export function ReactionDrill({ config, onComplete, onExit }: Props) {
   };
 
   const score = phase === "done" ? scoreReaction(eventsRef.current) : null;
-  const panelBg =
-    phase === "go"
-      ? "var(--color-green)"
-      : phase === "early"
-        ? "var(--color-rose)"
-        : "var(--color-panel-hi)";
+  const panelColor =
+    phase === "go" ? "var(--color-green)" : phase === "early" ? "var(--color-rose)" : null;
 
   return (
     <GameShell title="REACTION" sub="response time" accent="rose" onExit={onExit}>
       {phase === "intro" && (
-        <div className="flex flex-col items-center gap-5 text-center">
-          <p className="text-sm leading-relaxed text-muted">
-            The panel is dark, then turns <b className="text-green">green</b>. Tap the
-            instant it does. {config.trials} trials, we keep your fastest. Don't jump
-            early.
-          </p>
-          <Btn onClick={start} big accent="rose">
-            START
-          </Btn>
-        </div>
+        <DrillIntro
+          accent="rose"
+          glyph="⚡"
+          specs={[`${config.trials} trials`, "random delay", "fastest counts"]}
+          actions={
+            <Btn onClick={start} big solid accent="rose">
+              START
+            </Btn>
+          }
+        >
+          The panel is dark, then turns <b className="text-green">green</b>. Tap the
+          instant it does. {config.trials} trials, we keep your fastest. Don't jump early.
+        </DrillIntro>
       )}
       {(phase === "wait" || phase === "go" || phase === "early") && (
         <div className="flex w-full flex-col items-center gap-5">
-          <div className="font-mono text-xs tracking-widest text-muted">
-            TRIAL {Math.min(trialRef.current + 1, config.trials)} / {config.trials}
-          </div>
+          <TrialMeter
+            current={Math.min(trialRef.current, config.trials - 1)}
+            total={config.trials}
+            color="var(--color-rose)"
+          />
+          {/* no motion while waiting: an animation could act as a timing cue */}
           <button
             type="button"
             onClick={handleTap}
-            className="flex h-64 w-full items-center justify-center rounded-2xl border border-edge transition-colors"
-            style={{ background: panelBg }}
+            className={`relative flex h-72 w-full items-center justify-center overflow-hidden rounded-2xl border ${
+              phase === "early" ? "shake" : ""
+            } ${panelColor ? "" : "glass"}`}
+            style={{
+              background: panelColor
+                ? `radial-gradient(circle at 50% 45%, color-mix(in srgb, ${panelColor} 75%, white), ${panelColor} 70%)`
+                : undefined,
+              borderColor: panelColor ?? "var(--color-edge)",
+              boxShadow: panelColor ? `0 0 50px -6px ${panelColor}` : undefined,
+            }}
           >
+            {phase === "wait" && (
+              <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+                {[200, 140, 80].map((d) => (
+                  <span
+                    key={d}
+                    className="absolute rounded-full border border-dashed border-edge"
+                    style={{ width: d, height: d }}
+                  />
+                ))}
+              </span>
+            )}
             <span
-              className="font-mono text-xl font-extrabold"
-              style={{ color: phase === "go" ? "var(--color-bg)" : "var(--color-fg)" }}
+              className="relative font-mono text-xl font-extrabold tracking-[0.2em]"
+              style={{ color: phase === "wait" ? "var(--color-muted)" : "var(--color-bg)" }}
             >
-              {phase === "wait" && "wait…"}
+              {phase === "wait" && "WAIT…"}
               {phase === "go" && "TAP"}
-              {phase === "early" && "too soon: tap to retry"}
+              {phase === "early" && "TOO SOON: TAP TO RETRY"}
             </span>
           </button>
-          {times.length > 0 && (
-            <div className="font-mono text-sm text-muted">
-              last: {times[times.length - 1]} ms
-            </div>
-          )}
+          <div className="h-5 font-mono text-xs tracking-[0.2em] text-muted">
+            {times.length > 0 && (
+              <>
+                LAST <span className="tabular-nums text-fg">{times[times.length - 1]} ms</span>
+              </>
+            )}
+          </div>
         </div>
       )}
       {phase === "done" && score && (
