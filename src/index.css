@@ -301,16 +301,16 @@
     animation: pip-bob 3.2s ease-in-out infinite;
   }
   .pip-arm-l {
-    transform-origin: 37px 93px;
+    transform-origin: 40px 89px;
   }
   .pip-arm-r {
-    transform-origin: 83px 93px;
+    transform-origin: 80px 89px;
   }
   .pip-head {
-    transform-origin: 60px 80px;
+    transform-origin: 60px 78px;
   }
   .pip-lids {
-    transform-origin: 60px 51px;
+    transform-origin: 60px 53px;
     animation: pip-blink 4.6s infinite;
   }
   .pip-bulb {
@@ -631,10 +631,10 @@
 @keyframes pip-wave {
   0%,
   100% {
-    transform: rotate(-112deg);
+    transform: rotate(-92deg);
   }
   50% {
-    transform: rotate(-142deg);
+    transform: rotate(-124deg);
   }
 }
 @keyframes pip-nod {

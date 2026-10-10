@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef } from "react";
 
 /**
- * Pip: a small original robot who reacts to results. Moods map one to one to
- * run verdicts (see mascot/mood.ts); Pip never reacts more warmly than the
- * numbers justify.
+ * Pip: a small original character who reacts to results. Part ichimatsu
+ * doll (shaved monk-like scalp, porcelain face, haori over striped hakama),
+ * part plush desk companion (round soft head, dot eyes, blush, headphones).
+ * Moods map one to one to run verdicts (see mascot/mood.ts); Pip never
+ * reacts more warmly than the numbers justify.
  */
 export type PipMood = "idle" | "wave" | "clap" | "celebrate" | "nod" | "encourage";
 
@@ -16,8 +18,9 @@ const MOOD_LABEL: Record<PipMood, string> = {
   encourage: "Pip, pumping both fists in encouragement",
 };
 
-const CHEST: Record<PipMood, string> = {
-  idle: "var(--color-cyan)",
+/** color of the haori tie on Pip's chest */
+const TIE: Record<PipMood, string> = {
+  idle: "#f4f1ea",
   wave: "var(--color-violet)",
   clap: "var(--color-cyan)",
   celebrate: "var(--color-green)",
@@ -25,11 +28,14 @@ const CHEST: Record<PipMood, string> = {
   encourage: "var(--color-amber)",
 };
 
+const INK = "#2a2230";
+const SKIN = "#fbf1e6";
+
 const SPARKS = [
   { x: 12, y: 30, delay: 0 },
-  { x: 106, y: 22, delay: 0.4 },
+  { x: 108, y: 20, delay: 0.4 },
   { x: 8, y: 84, delay: 0.8 },
-  { x: 110, y: 74, delay: 1.2 },
+  { x: 112, y: 76, delay: 1.2 },
 ];
 
 /** four-point star centered on (x, y) */
@@ -67,8 +73,8 @@ export function Pip({ mood = "idle", size = 112, track = true, className = "" }:
       const cx = r.left + r.width / 2;
       const cy = r.top + r.height * 0.35;
       const clamp = (v: number) => Math.max(-1, Math.min(1, v));
-      const ox = clamp((px - cx) / 260) * 4.5;
-      const oy = clamp((py - cy) / 260) * 3.2;
+      const ox = clamp((px - cx) / 260) * 3.4;
+      const oy = clamp((py - cy) / 260) * 2.4;
       eyes.setAttribute("transform", `translate(${ox.toFixed(2)} ${oy.toFixed(2)})`);
     };
     const onMove = (e: PointerEvent) => {
@@ -86,9 +92,9 @@ export function Pip({ mood = "idle", size = 112, track = true, className = "" }:
   }, [track]);
 
   const happy = mood === "clap" || mood === "celebrate";
-  const shell = `pip-shell-${uid}`;
-  const glow = `pip-glow-${uid}`;
-  const chest = CHEST[mood];
+  const id = (name: string) => `pip-${name}-${uid}`;
+  const url = (name: string) => `url(#${id(name)})`;
+  const tie = TIE[mood];
 
   return (
     <svg
@@ -102,13 +108,37 @@ export function Pip({ mood = "idle", size = 112, track = true, className = "" }:
       className={`pip pip--${mood} ${className}`}
     >
       <defs>
-        <linearGradient id={shell} x1="0" y1="0" x2="0.4" y2="1">
-          <stop offset="0" stopColor="#f4f8ff" />
-          <stop offset="0.55" stopColor="#c9d6f2" />
-          <stop offset="1" stopColor="#8496c4" />
+        {/* plush head: warm cream with a soft lower shadow */}
+        <radialGradient id={id("head")} cx="0.42" cy="0.36" r="0.75">
+          <stop offset="0" stopColor="#fffaf3" />
+          <stop offset="0.6" stopColor="#f2e3d1" />
+          <stop offset="1" stopColor="#d7bfa5" />
+        </radialGradient>
+        {/* shaved scalp, the doll's blue-grey hairline */}
+        <linearGradient id={id("scalp")} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8e9ab3" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#a9b3c8" stopOpacity="0.12" />
         </linearGradient>
-        <filter id={glow} x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="2.2" result="b" />
+        <filter id={id("soft")} x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="1.3" />
+        </filter>
+        <linearGradient id={id("haori")} x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0" stopColor="#56618a" />
+          <stop offset="1" stopColor="#353d5c" />
+        </linearGradient>
+        <linearGradient id={id("hakama")} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#9b8f7b" />
+          <stop offset="1" stopColor="#6f6556" />
+        </linearGradient>
+        <linearGradient id={id("cup")} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#4a5060" />
+          <stop offset="1" stopColor="#22262f" />
+        </linearGradient>
+        <clipPath id={id("clip")}>
+          <ellipse cx="60" cy="46" rx="33" ry="31" />
+        </clipPath>
+        <filter id={id("glow")} x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="1.6" result="b" />
           <feMerge>
             <feMergeNode in="b" />
             <feMergeNode in="SourceGraphic" />
@@ -116,7 +146,7 @@ export function Pip({ mood = "idle", size = 112, track = true, className = "" }:
         </filter>
       </defs>
 
-      <ellipse className="pip-shadow" cx="60" cy="146" rx="22" ry="3.6" fill="#000" opacity="0.4" />
+      <ellipse className="pip-shadow" cx="60" cy="146" rx="24" ry="3.6" fill="#000" opacity="0.4" />
 
       {/* sparkles only animate in the celebrate mood */}
       {SPARKS.map(({ x, y, delay }) => (
@@ -130,82 +160,100 @@ export function Pip({ mood = "idle", size = 112, track = true, className = "" }:
       ))}
 
       <g className="pip-root">
-        {/* legs */}
-        <rect x="47" y="116" width="10" height="20" rx="5" fill="#7d8fbd" />
-        <rect x="63" y="116" width="10" height="20" rx="5" fill="#7d8fbd" />
-        <ellipse cx="51" cy="137" rx="8" ry="4.5" fill={`url(#${shell})`} />
-        <ellipse cx="69" cy="137" rx="8" ry="4.5" fill={`url(#${shell})`} />
+        {/* tabi feet */}
+        <ellipse cx="50" cy="140" rx="7.5" ry="3.8" fill="#f4f1ea" />
+        <ellipse cx="70" cy="140" rx="7.5" ry="3.8" fill="#f4f1ea" />
 
-        {/* body */}
-        <rect x="37" y="85" width="46" height="37" rx="17" fill={`url(#${shell})`} />
-        <path d="M41 108 Q60 114 79 108" stroke="#8091c0" strokeWidth="1.2" fill="none" opacity="0.6" />
-        <circle cx="60" cy="100" r="7.5" fill="#0a1328" />
-        <circle cx="60" cy="100" r="4.2" fill={chest} filter={`url(#${glow})`} />
+        {/* striped hakama */}
+        <path d="M37 108 L83 108 L91 138 Q60 143 29 138 Z" fill={url("hakama")} />
+        <g stroke="#5c5346" strokeOpacity="0.55" strokeWidth="1.1">
+          {[44, 50, 56, 62, 68, 74].map((x) => (
+            <path key={x} d={`M${x} 112 L${x + (x - 60) * 0.18} 139`} />
+          ))}
+        </g>
+        <path d="M60 116 L60 140" stroke="#4d453a" strokeWidth="1.4" />
 
-        {/* arms rotate around the shoulders */}
+        {/* haori jacket over a white collar */}
+        <path d="M41 82 Q60 75 79 82 L86 117 Q60 123 34 117 Z" fill={url("haori")} />
+        <path d="M51 79 L60 97 L69 79" stroke="#f4f1ea" strokeWidth="4" strokeLinejoin="round" fill="none" />
+        <path d="M48 80 L60 103 M72 80 L60 103" stroke="#6b77a3" strokeWidth="1.3" fill="none" />
+
+        {/* haori tie: the knot carries the mood color */}
+        <g filter={mood === "idle" ? undefined : url("glow")}>
+          <path d="M57.5 104 L55 112 M62.5 104 L65 112" stroke={tie} strokeWidth="2.2" strokeLinecap="round" />
+          <circle cx="60" cy="102.5" r="3.4" fill={tie} />
+        </g>
+
+        {/* sleeves rotate around the shoulders */}
         <g className="pip-arm-l">
-          <path d="M37 93 L27 116" stroke="#9fb0da" strokeWidth="7" strokeLinecap="round" />
-          <circle cx="27" cy="116" r="5.8" fill={`url(#${shell})`} />
+          <path d="M40 89 L32.5 106" stroke={url("haori")} strokeWidth="13" strokeLinecap="round" />
+          <path d="M27 103 L38 108" stroke="#6b77a3" strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="30" cy="112" r="5.2" fill={SKIN} />
         </g>
         <g className="pip-arm-r">
-          <path d="M83 93 L93 116" stroke="#9fb0da" strokeWidth="7" strokeLinecap="round" />
-          <circle cx="93" cy="116" r="5.8" fill={`url(#${shell})`} />
+          <path d="M80 89 L87.5 106" stroke={url("haori")} strokeWidth="13" strokeLinecap="round" />
+          <path d="M93 103 L82 108" stroke="#6b77a3" strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="90" cy="112" r="5.2" fill={SKIN} />
         </g>
 
         <g className="pip-head">
-          <rect x="54" y="74" width="12" height="10" rx="3" fill="#7d8fbd" />
-          <path d="M60 22 L60 11" stroke="#9fb0da" strokeWidth="2.5" strokeLinecap="round" />
-          <circle className="pip-bulb" cx="60" cy="8" r="4.5" fill="var(--color-cyan)" filter={`url(#${glow})`} />
-          <circle cx="21" cy="51" r="6.5" fill="#7d8fbd" />
-          <circle cx="99" cy="51" r="6.5" fill="#7d8fbd" />
-          <rect x="21" y="21" width="78" height="58" rx="27" fill={`url(#${shell})`} />
-          <rect
-            x="30"
-            y="32"
-            width="60"
-            height="37"
-            rx="17"
-            fill="#071022"
-            stroke="color-mix(in srgb, var(--color-cyan) 35%, transparent)"
-            strokeWidth="1"
-          />
-          <path d="M37 38 Q46 34 58 35" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          {/* round plush head with a shaved, monk-like scalp */}
+          <ellipse cx="60" cy="46" rx="33" ry="31" fill={url("head")} />
+          <g clipPath={url("clip")}>
+            <path
+              d="M18 44 Q24 30 41 30 Q60 35 79 30 Q96 30 102 44 L102 0 L18 0 Z"
+              fill={url("scalp")}
+              filter={url("soft")}
+            />
+          </g>
+          {/* lighter face panel */}
+          <ellipse cx="60" cy="55" rx="23" ry="16.5" fill={SKIN} />
+          <ellipse cx="44" cy="61" rx="5" ry="3" fill="#f3a3a9" opacity="0.6" />
+          <ellipse cx="76" cy="61" rx="5" ry="3" fill="#f3a3a9" opacity="0.6" />
 
           <g ref={eyesRef}>
             {happy ? (
-              <g stroke="var(--color-cyan)" strokeWidth="3.6" strokeLinecap="round" fill="none" filter={`url(#${glow})`}>
-                <path d="M42 54 Q48 45 54 54" />
-                <path d="M66 54 Q72 45 78 54" />
+              <g stroke={INK} strokeWidth="2.6" strokeLinecap="round" fill="none">
+                <path d="M45 54 Q49 48.5 53 54" />
+                <path d="M67 54 Q71 48.5 75 54" />
               </g>
             ) : (
-              <g fill="var(--color-cyan)" filter={`url(#${glow})`}>
-                <rect x="43.5" y={mood === "encourage" ? 46 : 44} width="9" height={mood === "encourage" ? 11 : 14} rx="4.5" />
-                <rect x="67.5" y={mood === "encourage" ? 46 : 44} width="9" height={mood === "encourage" ? 11 : 14} rx="4.5" />
+              <g fill={INK}>
+                <circle cx="49" cy="53" r="3.6" />
+                <circle cx="71" cy="53" r="3.6" />
+                <circle cx="50.2" cy="51.8" r="1.1" fill="#ffffff" />
+                <circle cx="72.2" cy="51.8" r="1.1" fill="#ffffff" />
               </g>
             )}
             {mood === "encourage" && (
-              <g stroke="var(--color-cyan)" strokeWidth="2.4" strokeLinecap="round">
-                <path d="M42 41 L53 43.5" />
-                <path d="M78 41 L67 43.5" />
+              <g stroke={INK} strokeWidth="1.8" strokeLinecap="round">
+                <path d="M44 46 L52.5 47.8" />
+                <path d="M76 46 L67.5 47.8" />
               </g>
             )}
             {!happy && (
-              <g className="pip-lids" fill="#071022">
-                <rect x="41" y="40" width="13" height="20" />
-                <rect x="66" y="40" width="13" height="20" />
+              <g className="pip-lids" fill={SKIN}>
+                <rect x="44.5" y="48.5" width="9" height="9" />
+                <rect x="66.5" y="48.5" width="9" height="9" />
               </g>
             )}
           </g>
 
           {mood === "celebrate" ? (
-            <ellipse cx="60" cy="63" rx="4.2" ry="3.4" fill="var(--color-cyan)" filter={`url(#${glow})`} />
+            <ellipse cx="60" cy="62" rx="3.4" ry="2.8" fill="#c65d6d" />
           ) : mood === "encourage" ? (
-            <path d="M55 63.5 Q60 66 65 63.5" stroke="var(--color-cyan)" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M56.5 62 Q60 64 63.5 62" stroke={INK} strokeWidth="1.8" strokeLinecap="round" fill="none" />
           ) : (
-            <path d="M54 61.5 Q60 67 66 61.5" stroke="var(--color-cyan)" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M56 60.5 Q60 65 64 60.5" stroke={INK} strokeWidth="1.8" strokeLinecap="round" fill="none" />
           )}
-          <circle cx="37" cy="62" r="3.2" fill="var(--color-rose)" opacity="0.45" />
-          <circle cx="83" cy="62" r="3.2" fill="var(--color-rose)" opacity="0.45" />
+
+          {/* headphones */}
+          <path d="M25 47 Q25 9 60 9 Q95 9 95 47" stroke="#2c313d" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+          <path d="M31 30 Q40 15 60 13.5" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+          <rect x="18" y="35" width="13" height="25" rx="6.5" fill={url("cup")} />
+          <rect x="89" y="35" width="13" height="25" rx="6.5" fill={url("cup")} />
+          <circle className="pip-bulb" cx="22.5" cy="47.5" r="1.7" fill="var(--color-cyan)" filter={url("glow")} />
+          <circle className="pip-bulb" cx="97.5" cy="47.5" r="1.7" fill="var(--color-cyan)" filter={url("glow")} />
         </g>
       </g>
     </svg>

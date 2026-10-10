@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { homeGreeting, reactionFor, type HomeRow } from "./mood";
 
-const BANNED = /diagnos|brain damage|\bIQ\b|brain age|scientifically proven|failing|impaired|—/i;
+const EM_DASH = String.fromCharCode(0x2014);
+const BANNED = new RegExp(
+  `diagnos|brain damage|\\bIQ\\b|brain age|scientifically proven|failing|impaired|${EM_DASH}`,
+  "i",
+);
 
 describe("reactionFor", () => {
   it("claps only for runs that beat the baseline", () => {

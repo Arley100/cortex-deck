@@ -30,6 +30,8 @@ describe("cardRows", () => {
   });
 
   it("keeps the card's disclaimer neutral", () => {
-    expect(CARD_FOOTNOTE).not.toMatch(/diagnos|\bIQ\b|brain age|—/);
+    expect(CARD_FOOTNOTE).not.toMatch(/diagnos|\bIQ\b|brain age/);
+    // the project bans em dashes in all copy
+    expect(CARD_FOOTNOTE).not.toContain(String.fromCharCode(0x2014));
   });
 });
