@@ -15,35 +15,73 @@
 
 ---
 
-You arrive with a feed-fried brain (LinkedIn, reels, Discord) and can't lock onto a task. Cortex Deck gives you six two-minute drills, scores them without flattery, and tracks a rolling baseline per drill. The home screen shows which drills are below **your own** baseline today and suggests a few targeted reps there.
+You arrive with a feed-fried brain (LinkedIn, reels, Discord) and can't lock onto a task. Cortex Deck gives you six drills of one to two minutes each, scores them without flattery, and keeps a rolling baseline per drill. The home screen shows which drills are below **your own** baseline today and suggests a few targeted reps there.
 
 Everything runs in the browser. Runs are stored in IndexedDB on your device and never leave it unless you export them yourself.
 
 ## Contents
 
-- [The drills](#the-drills)
-- [Meet Pip](#meet-pip)
-- [Baselines and honest scoring](#baselines-and-honest-scoring)
-- [Pre/Post mode](#prepost-mode)
-- [Sound](#sound)
-- [Design](#design)
-- [What this is not](#what-this-is-not)
-- [Architecture](#architecture)
-- [Development](#development)
-- [Data and privacy](#data-and-privacy)
+1. [How it works](#how-it-works)
+2. [How to play](#how-to-play)
+3. [Your baseline](#your-baseline)
+4. [Meet Pip](#meet-pip)
+5. [Pre/Post mode](#prepost-mode)
+6. [Sound](#sound)
+7. [Design decisions](#design-decisions)
+8. [Architecture](#architecture)
+9. [Quality](#quality)
+10. [What this is not](#what-this-is-not)
+11. [Development](#development)
+12. [Data and privacy](#data-and-privacy)
 
-## The drills
+## How it works
 
-| Drill | Faculty | Parameters | Headline metric | Always reported separately |
+```mermaid
+flowchart LR
+    open["Open the app"] --> intro["Pick a drill<br/>read the intro card"]
+    intro --> run["Play timed trials<br/>every tap is logged"]
+    run --> score["Score<br/>hits, misses,<br/>false alarms, RT"]
+    score --> verdict{"Compare with<br/>your baseline"}
+    verdict --> results["Results<br/>breakdown and<br/>Pip's reaction"]
+    score --> db[("Saved on<br/>this device")]
+    db --> median["Baseline<br/>median of your<br/>last 10 runs"]
+    median -. "judges the next run" .-> verdict
+    median --> chips["Home status chips<br/>and Pip's suggestion"]
+    median --> faculties["Faculties<br/>sparklines"]
+```
+
+- **Every run is saved** with its headline score and full breakdown, tagged by drill and variant (2-back and 3-back are tracked separately).
+- **Your baseline** is the median of your last 10 runs of that drill. It appears after 3 runs.
+- **Each new run is compared with the baseline from the runs before it**, so a run never counts toward the baseline it is judged against.
+- **The home screen** turns those comparisons into status chips and a suggestion: if a drill is below your baseline today, Pip says so and suggests a few reps there.
+
+## How to play
+
+Every drill opens on an intro card with its rules and parameters. Tap **START** (or **2-BACK** / **3-BACK** for N-Back) when you are ready. **EXIT** leaves at any time; an unfinished run is not saved.
+
+| Drill | Trains | What you see | What you do | Ends when |
 | --- | --- | --- | --- | --- |
-| **N-Back** (2-back / 3-back) | working memory | 3×3 grid, 24 trials, 2.4 s pace, 32% forced matches | accuracy % + d′ | hits, missed matches, false alarms, correct passes |
-| **Stroop** | attention, inhibition | 45 s, 4 inks, 75% incongruent | correct answers | accuracy, wrong, answers per minute |
-| **Sequence** | memory span | 4 pads, +1 step per round, one miss ends it | longest chain | span |
-| **Math Sprint** | processing speed | 60 s, + − ×, 4 choices within ±6 | correct answers | accuracy, wrong, best streak |
-| **Reaction** | response time | 5 trials, random 1.4–4 s delay | fastest ms (lower is better) | average, early taps |
-| **Go / No-Go** | response inhibition | 28 trials, 68% go, 850 ms window | accuracy % + d′ | hits, correct stops, commissions, omissions, mean go RT |
+| **N-Back** | working memory | One cell of a 3×3 grid lights up every 2.4 s. | Tap **MATCH** when the lit cell is the same as the one *N* steps back (2 or 3). Do nothing otherwise. | 24 trials are done. |
+| **Stroop** | attention, inhibition | A color word (RED, GREEN, BLUE, AMBER) printed in a different ink. | Tap the button for the **ink** color, not the word. | 45 seconds are up. |
+| **Sequence** | memory span | Four pads flash a pattern, one longer each round. | Watch, then repeat the pattern in order. | You make one wrong tap. |
+| **Math Sprint** | processing speed | A sum, difference or product with four answer tiles. | Tap the right answer as fast as you can; chain correct answers into a streak. | 60 seconds are up. |
+| **Reaction** | response time | A dark panel that turns green after a random 1.4 to 4 s wait. | Tap the moment it turns green. Tapping early is flagged and that trial restarts. | 5 valid taps are recorded. |
+| **Go / No-Go** | response inhibition | A green circle (68% of trials) or a red square (32%). | Tap fast on green. Hold still on red. | 28 trials are done. |
 
-d′ uses the standard 1/(2N) correction when a hit or false-alarm rate is 0 or 1, so a perfect run reports a finite number instead of infinity.
+### How each drill is scored
+
+Every drill reports the parts of its score separately. Nothing is folded into one flattering number.
+
+| Drill | Headline | Also reported |
+| --- | --- | --- |
+| N-Back | accuracy % and d′ | hits, missed matches, false alarms, correct passes |
+| Stroop | correct answers | accuracy, wrong answers, answers per minute |
+| Sequence | longest chain repeated correctly | span |
+| Math Sprint | correct answers | accuracy, wrong answers, best streak |
+| Reaction | fastest tap in ms (lower is better) | average, early taps |
+| Go / No-Go | accuracy % and d′ | hits, correct stops, taps on red, missed greens, mean go speed |
+
+**d′ (d-prime)** measures how well you tell targets from non-targets, independent of how trigger-happy you are. When a hit or false-alarm rate is exactly 0 or 1, the standard 1/(2N) correction is applied, so a perfect run reports a finite number instead of infinity.
 
 <p align="center">
   <img src="docs/screenshots/nback.webp" alt="N-Back run: glowing cell in a 3x3 glass grid with a segmented trial meter" width="200" />
@@ -52,47 +90,61 @@ d′ uses the standard 1/(2N) correction when a hit or false-alarm rate is 0 or 
   <img src="docs/screenshots/mathsprint.webp" alt="Math Sprint run: a subtraction problem, time bar, streak meter and four answer tiles" width="200" />
 </p>
 
+## Your baseline
+
+| Status chip | Meaning | Rule |
+| --- | --- | --- |
+| `calibrating: N/3` | Not enough history yet. | Fewer than 3 runs of this drill and variant. |
+| `no run today` | A baseline exists but you have not played this drill today. | No run since local midnight. |
+| `at baseline` | Today's run is in your normal range. | Within ±10% of your baseline. |
+| `above baseline` | Today's run is better than usual. | More than 10% better. |
+| `below baseline` | Today's run is lower than usual. | More than 10% worse. |
+
+For Reaction, lower is better, so the comparison is inverted: a faster time counts as *above*.
+
+The **Faculties** screen lists all six drills with your baseline, today's value and a sparkline of your last 10 runs. The dashed line is your baseline, and up always means better.
+
+<p align="center">
+  <img src="docs/screenshots/faculties.webp" alt="Faculties screen: six cards with baseline, today, status chip and a sparkline with a dashed baseline" width="300" />
+</p>
+
 ## Meet Pip
 
 <p align="center">
   <img src="docs/screenshots/pip.gif" alt="Animated: Pip, a doll-like character in headphones, haori and hakama, clapping and hopping for a personal best, and raising both fists for a below-baseline run" width="560" />
 </p>
 
-Pip is an original character who reacts to every finished run. He is half Japanese ichimatsu doll (shaved, monk-like scalp, porcelain face, haori jacket over striped hakama, tabi feet) and half plush desk companion (round soft head, dot eyes, blush, and headphones that nod to the app's ambient drone). The tie on his chest glows in the color of his mood, and his eyes follow your pointer. He is pure SVG and CSS: no image files, crisp at any size.
-
-His reaction comes from one pure function, `classifyRun` in [`src/baseline/verdict.ts`](src/baseline/verdict.ts), which compares the run with the baseline computed from your **previous** runs. A run never counts toward the baseline it is judged against.
+Pip is the console's companion. He greets you on the home screen, suggests where to spend your reps, and reacts once each run finishes.
 
 | Your run | Pip | What he says |
 | --- | --- | --- |
-| strictly better than every previous run | claps 4×, hops, sparkles | "New personal best. Your previous best was 71%." |
-| more than 10% better than baseline | claps 3× | "Above your baseline of 66%." |
-| within ±10% of baseline | nods, thumbs up | "Right at your baseline of 66%. Steady." |
-| more than 10% worse than baseline | pumps both fists | "Below your baseline of 6.5 today. Another rep?" |
-| fewer than 3 runs logged | waves | "Calibrating: 2/3 runs logged." |
+| Better than every previous run | Claps four times, hops, sparkles | "New personal best. Your previous best was 71%." |
+| More than 10% above baseline | Claps three times | "Above your baseline of 66%." |
+| Within 10% of baseline | Nods, thumbs up | "Right at your baseline of 66%. Steady." |
+| More than 10% below baseline | Raises both fists | "Below your baseline of 6.5 today. Another rep?" |
+| Fewer than 3 runs logged | Waves | "Calibrating: 2/3 runs logged." |
 
-He never praises more than the numbers justify, and "below" is described as a state of the run, never a judgment of you. A unit test checks every line he can say against the project's banned-wording list.
+He never praises more than the numbers justify. "Below" describes the run, never the person, and a unit test checks every line he can say against the project's banned-wording list.
 
 <p align="center">
-  <img src="docs/screenshots/results-below.webp" alt="Sequence results: Pip pumping his fists, 'Below your baseline of 6.5 today. Another rep?', span 0" width="260" />
+  <img src="docs/screenshots/results-below.webp" alt="Sequence results: Pip raising his fists, 'Below your baseline of 6.5 today. Another rep?', span 0" width="260" />
   <img src="docs/screenshots/drill-intro.webp" alt="N-Back intro card with parameter tags and 2-back / 3-back buttons" width="260" />
-</p>
-
-## Baselines and honest scoring
-
-- Every completed run is stored: `{ drillId, variant, timestamp, score, breakdown, sessionTag }`.
-- **Baseline** per drill and variant = rolling median of the last 10 runs. It exists from 3 runs; before that the UI shows `calibrating: N/3`.
-- **Deviation** of today's run: within ±10% is *at*, more than 10% better is *above*, more than 10% worse is *below*. For Reaction (lower is better) the comparison inverts.
-- **Faculties** lists every drill with baseline, today's value and an inline-SVG sparkline of the last 10 runs. The dashed line is the baseline; up always means better, so Reaction's chart is flipped.
-
-<p align="center">
-  <img src="docs/screenshots/faculties.webp" alt="Faculties screen: six cards with baseline, today, status chip and a sparkline with a dashed baseline" width="300" />
 </p>
 
 ## Pre/Post mode
 
-Run a short battery (default: Stroop 30 s, Reaction 3 trials, Go/No-Go 20 trials; under 3 minutes), go do whatever you were going to do, then run the same battery again. Both halves share a `sessionTag`, survive reloads, and are stored under a separate `battery` variant so they never mix into full-length baselines.
+Measure how something you do affects your focus, for example 30 minutes of scrolling, a meeting or a deep-work block.
 
-The result is a neutral side by side ("Stroop: 31 → 24 correct, −23%") plus a **1200×630 PNG share card** drawn on a canvas entirely in the browser. On phones it opens the native share sheet; elsewhere it downloads.
+```mermaid
+flowchart LR
+    before["Before battery<br/>3 short drills,<br/>under 3 minutes"] --> saved["Session saved<br/>survives reloads"]
+    saved --> life["Do the thing<br/>scroll, meet,<br/>deep work"]
+    life --> after["After battery<br/>same 3 drills"]
+    after --> deltas["Side-by-side<br/>deltas"]
+    deltas --> card["PNG share card<br/>drawn in the browser"]
+```
+
+The default battery is Stroop (30 s), Reaction (3 trials) and Go/No-Go (20 trials); you can pick any 3 drills in Settings. The result is a plain side by side, for example "Stroop: 31 → 24 correct, −23%", plus a 1200×630 share card. On phones it opens the share sheet; elsewhere it downloads.
 
 <p align="center">
   <img src="docs/screenshots/prepost.webp" alt="Pre/Post intro: three-step indicator, battery drill tags and a start button" width="260" />
@@ -102,61 +154,123 @@ The result is a neutral side by side ("Stroop: 31 → 24 correct, −23%") plus 
 
 ## Sound
 
-All audio is synthesized at runtime with the Web Audio API: no audio files, no requests. Two switches live in the top bar and in Settings.
+All audio is generated in the browser with the Web Audio API: no audio files and no downloads. Both switches are in the top bar and in Settings.
 
-- **SFX** (on by default): soft ticks and two-note tones acknowledging your taps, plus Pip's claps, synced to his animation.
-- **Drone** (off by default): a low pad with a 110 Hz / 116 Hz left-right pair (a 6 Hz binaural offset, best on headphones) and a pink-noise bed that swells about every 11 seconds, a pace you can breathe along with.
+| Channel | Default | What you hear | When it plays |
+| --- | --- | --- | --- |
+| **SFX** | on | Soft ticks and two-note tones; Pip's claps | Only after your own taps and when results appear |
+| **Drone** | off | A low hum with a 6 Hz left-right offset (best on headphones) and slow swells about every 11 seconds | Continuously while switched on |
 
-Measurement rule: **a sound never announces a stimulus.** There is no tone when the Reaction panel turns green, during Sequence playback, or at N-Back onsets. Sounds only follow your own input, so scores stay comparable with silent runs and with history recorded before sound existed. The drone is offered as a backdrop some people find settling; the app makes no claim that it changes scores.
+## Design decisions
 
-## Design
+Some choices look odd until you know why they were made.
 
-The visual language combines interaction patterns explored on [21st.dev](https://21st.dev) with two character references for the mascot, all rebuilt from scratch for this app:
-
-| Element | Where it shows up |
+| Question | Answer |
 | --- | --- |
-| Deep-navy glass with drifting crystal shards that trail the mouse and burst on click | backdrop and every panel |
-| A constellation whose lines reach for your pointer | full-screen canvas field |
-| Chromatic RGB-split text with brief slice glitches | wordmark, screen titles, results headline |
-| HUD buttons with clipped corners and viewfinder brackets | every button, card and panel |
-| Eyes that track the cursor | Pip |
-| Ichimatsu doll styling crossed with a plush, headphone-wearing desk companion | Pip |
+| Why does the background go quiet during a drill? | On drill screens the moving constellation dims, slows down and stops reacting to the pointer, so nothing on screen competes with the stimulus you are responding to. |
+| Why is there no sound when the Reaction panel turns green? | A sound at the moment of the stimulus would turn a visual reaction test into an audio one and make times faster. Sounds only acknowledge your taps, so runs with sound on stay comparable with silent ones. |
+| Why does the Reaction waiting screen not animate? | Any pulse or rhythm on screen could become a timing cue and encourage early taps. |
+| Why didn't Pip clap after my run? | He claps only when the run beats your baseline or your best. Matching your baseline earns a nod; a lower run earns encouragement. |
+| Why are my first runs "calibrating"? | A baseline from one or two runs is mostly noise. Three runs is the minimum before comparisons start. |
+| Does "below baseline" mean something is wrong? | No. It only means this run scored lower than your recent median. Sleep, time of day and attention vary; the trend across many runs says more than any single day. |
+| Why is there no overall score? | Hits, misses and false alarms describe different things. Combining them would hide exactly what you need to see. |
+| Why does the Reaction sparkline go up when I got faster? | Every sparkline is drawn so that up means better. For Reaction, better means fewer milliseconds. |
+| Do Pre/Post batteries change my baseline? | No. Battery runs are shorter and are stored separately, so they never mix into your full-length baselines. |
+| Why does Pip look the way he does? | His shaved, monk-like head and traditional haori and hakama stand for calm, steady practice. The round, soft face and headphones make him friendly and connect him to the focus drone. The tie on his chest glows in the color of his mood. |
+| Can I turn the motion off? | Yes. With your system's reduced-motion setting on, the backdrop is a single still frame and every animation settles immediately. |
 
-Two rules keep the decoration out of the measurement:
-
-1. **Calm during drills.** On drill and battery screens the field dims to 40%, slows down, and turns pointer effects off, so nothing moving competes with a stimulus. The Reaction wait screen is deliberately static, because a pulsing animation could act as a timing cue.
-2. **Mechanics are untouched.** Trial timing, scoring and input handling are unchanged (Reaction still measures on `click`), so existing baselines stay valid.
-
-Fonts (Space Grotesk, JetBrains Mono) are self-hosted through Fontsource and bundled with the app; there are no third-party font requests. `prefers-reduced-motion` freezes the field to a single static frame and settles every animation immediately.
+| Visual element | Purpose |
+| --- | --- |
+| Deep-navy glass panels | Quiet surfaces that let colored feedback stand out |
+| Constellation backdrop that reaches for the pointer | Gives the home screen life without touching the drills |
+| Glass shards that trail the mouse and burst on click | Playful feedback on non-drill screens only |
+| RGB-split glitch titles | Gives the console its identity on titles and result headlines |
+| Clipped-corner buttons and viewfinder brackets | Large, clearly bounded touch targets with a console feel |
+| One accent color per drill | Lets you recognize each drill at a glance |
 
 <p align="center">
   <img src="docs/screenshots/desktop.webp" alt="Desktop layout: wide hero, Pip console and a three-column drill grid over the constellation field" width="820" />
 </p>
 
-## What this is not
-
-- **Not a medical device.** It does not detect, assess or treat any condition.
-- **Not an intelligence test or booster.** It measures task performance relative to your own history, nothing more.
-- **Limited transfer.** Training these drills makes you better at these drills. Transfer to other skills is limited; that is what the research on practiced-task training generally shows.
-
 ## Architecture
 
-```
-src/
-  app/          shell, state-based routing, Zustand store, screens
-  drills/       one folder per drill, each exporting a DrillDefinition
-  engine/       shared trial scheduler, tracked timelines, seedable RNG
-  scoring/      pure: accuracy, d-prime, streaks, tallies (fully unit-tested)
-  baseline/     pure: rolling baseline, deviation flags, run verdicts
-  storage/      Dexie schema with migration scaffold, runs and settings repos, export/import
-  audio/        Web Audio engine: synthesized SFX and the ambient drone
-  mascot/       Pip (SVG + CSS moods) and the pure verdict-to-reaction mapping
-  fx/           constellation and crystal-shard canvas
-  share/        pre/post share-card renderer
-  components/   GameShell, Results, HUD Btn, StatusChip, Sparkline, GlitchText, ...
+```mermaid
+flowchart TB
+    subgraph ui["UI (React)"]
+        screens["app/screens<br/>Home, Faculties,<br/>Pre/Post, Settings"]
+        drills["drills/*<br/>six DrillDefinitions"]
+        components["components<br/>GameShell, Results,<br/>Sparkline, buttons"]
+        mascot["mascot<br/>Pip and his reactions"]
+    end
+    subgraph core["Pure core (unit-tested)"]
+        engine["engine<br/>trial scheduler,<br/>timelines, seeded RNG"]
+        scoring["scoring<br/>accuracy, d-prime,<br/>streaks, tallies"]
+        baseline["baseline<br/>median, deviation,<br/>run verdicts"]
+    end
+    subgraph effects["State and side effects"]
+        store["app/store<br/>Zustand"]
+        storage[("storage<br/>Dexie / IndexedDB")]
+        audio["audio<br/>Web Audio synth"]
+        fx["fx<br/>canvas backdrop"]
+        share["share<br/>PNG card renderer"]
+    end
+    screens --> drills
+    drills --> engine
+    drills --> scoring
+    drills --> components
+    components --> mascot
+    screens --> store
+    components --> store
+    store --> baseline
+    store --> storage
+    mascot --> audio
+    screens --> share
+    screens --> fx
 ```
 
-Every drill implements one contract and never owns raw `setTimeout` chains; timing lives in `engine/` and is cancelled on unmount.
+### Lifecycle of one run
+
+```mermaid
+sequenceDiagram
+    actor You
+    participant Drill as Drill component
+    participant Engine as engine scheduler
+    participant Store as store.recordRun
+    participant DB as runsRepo (IndexedDB)
+    participant Verdict as classifyRun
+    participant Results as Results and Pip
+    You->>Drill: START
+    Drill->>Engine: declare trials and pacing
+    loop every trial
+        Engine-->>Drill: stimulus on / off
+        You->>Drill: tap (timed with performance.now)
+    end
+    Engine-->>Drill: done
+    Drill->>Store: score(events)
+    Store->>DB: previous scores for drill and variant
+    DB-->>Store: history
+    Store->>Verdict: history, score, higherIsBetter
+    Verdict-->>Store: personal best, above, at, below or calibrating
+    Store->>DB: save run
+    Store-->>Results: verdict
+    Results-->>You: headline, breakdown, Pip's reaction
+```
+
+| Module | Responsibility | Notes |
+| --- | --- | --- |
+| `app/` | Shell, state-based routing, Zustand store, screens | The store records runs and computes each run's verdict |
+| `drills/` | One folder per drill, each exporting a `DrillDefinition` | Drills declare trials; they never own raw timers |
+| `engine/` | Trial scheduler, tracked timelines, seedable RNG | Every timer is cancelled on unmount |
+| `scoring/` | Accuracy, d-prime, streaks, tallies | Pure and fully unit-tested |
+| `baseline/` | Rolling median, deviation flags, run verdicts | Pure and fully unit-tested |
+| `storage/` | Dexie schema with a migration scaffold, runs and settings repos, export/import | All data stays on the device |
+| `mascot/` | Pip's SVG, mood animations and verdict-to-reaction mapping | His wording is checked by tests |
+| `audio/` | Synthesized sound effects and the ambient drone | No audio files |
+| `fx/` | Constellation and shard canvas | Calm mode on drill screens |
+| `share/` | Pre/Post share-card renderer | Canvas, fully client-side |
+| `components/` | Shared UI: GameShell, Results, buttons, StatusChip, Sparkline | Reused by every screen |
+
+Every drill implements one contract:
 
 ```ts
 interface DrillDefinition {
@@ -169,6 +283,24 @@ interface DrillDefinition {
 }
 ```
 
+## Quality
+
+| Check | Result |
+| --- | --- |
+| Unit and component tests (Vitest, React Testing Library) | 105 tests across 17 files |
+| Type checking | TypeScript strict mode, no errors |
+| Lint | ESLint, no warnings |
+| Lighthouse, mobile, production build | Performance 97 · Accessibility 100 · Best Practices 100 |
+| CI | Typecheck, lint, tests and build on every push and pull request |
+
+Every control is reachable by keyboard, and the layout is designed for a 380 px phone first, with desktop as the secondary case.
+
+## What this is not
+
+- **Not a medical device.** It does not detect, assess or treat any condition.
+- **Not an intelligence test or booster.** It measures task performance relative to your own history, nothing more.
+- **Limited transfer.** Training these drills makes you better at these drills. Transfer to other skills is limited; that is what the research on practiced-task training generally shows.
+
 ## Development
 
 ```bash
@@ -177,12 +309,10 @@ npm run dev        # Vite dev server on :5173
 npm run test       # Vitest, single run
 npm run typecheck  # tsc --noEmit (strict)
 npm run lint       # ESLint
-npm run build      # typecheck + production build
+npm run build      # typecheck and production build
 ```
 
-CI on GitHub Actions runs typecheck, lint, tests and the build on every push and pull request. The site deploys to Vercel as a static build.
-
-**Stack:** Vite · React 18 · TypeScript (strict) · Tailwind CSS 4 · Zustand · Dexie (IndexedDB) · Vitest + React Testing Library.
+**Stack:** Vite · React 18 · TypeScript (strict) · Tailwind CSS 4 · Zustand · Dexie (IndexedDB) · Vitest and React Testing Library. Fonts are self-hosted and bundled with the app. The site deploys to Vercel as a static build.
 
 ## Data and privacy
 
